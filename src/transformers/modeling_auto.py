@@ -57,7 +57,6 @@ from .modeling_bert import (
     BertForPreTraining,
     BertForQuestionAnswering,
     BertForSequenceClassification,
-    BertForGLTSequenceClassification,
     BertForTokenClassification,
     BertModel,
 )
@@ -90,6 +89,7 @@ from .modeling_flaubert import (
     FlaubertModel,
     FlaubertWithLMHeadModel,
 )
+from .modeling_glt import BertForGLTSequenceClassification
 from .modeling_gpt2 import GPT2LMHeadModel, GPT2Model
 from .modeling_longformer import (
     LongformerForMaskedLM,

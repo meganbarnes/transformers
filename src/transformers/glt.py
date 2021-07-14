@@ -10,7 +10,7 @@ from allennlp.training.metrics import CategoricalAccuracy, Average
 from torch import nn
 from torch.nn import CrossEntropyLoss
 #from transformers import BertPreTrainedModel, BertConfig
-#from transformers.modeling_bert import BertIntermediate, BertLayerNorm, BertLayer
+from .modeling_bert import BertIntermediate, BertLayerNorm, BertLayer, BertPreTrainedModel, BertConfig
 
 from .nn import tie_layers
 from .tree import sentence_to_tree
