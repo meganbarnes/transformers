@@ -57,6 +57,7 @@ from .modeling_bert import (
     BertForPreTraining,
     BertForQuestionAnswering,
     BertForSequenceClassification,
+    BertForGLTSequenceClassification,
     BertForTokenClassification,
     BertModel,
 )
@@ -217,7 +218,7 @@ MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING = OrderedDict(
         (BartConfig, BartForSequenceClassification),
         (LongformerConfig, LongformerForSequenceClassification),
         (RobertaConfig, RobertaForSequenceClassification),
-        (BertConfig, BertForSequenceClassification),
+        (BertConfig, BertForGLTSequenceClassification),
         (XLNetConfig, XLNetForSequenceClassification),
         (FlaubertConfig, FlaubertForSequenceClassification),
         (XLMConfig, XLMForSequenceClassification),
