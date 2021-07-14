@@ -9,11 +9,11 @@ from allennlp.nn import util
 from allennlp.training.metrics import CategoricalAccuracy, Average
 from torch import nn
 from torch.nn import CrossEntropyLoss
-from transformers import BertPreTrainedModel, BertConfig
-from transformers.modeling_bert import BertIntermediate, BertLayerNorm, BertLayer
+#from transformers import BertPreTrainedModel, BertConfig
+#from transformers.modeling_bert import BertIntermediate, BertLayerNorm, BertLayer
 
-from src.nn import tie_layers
-from src.tree import sentence_to_tree
+from .nn import tie_layers
+from .tree import sentence_to_tree
 
 
 @Model.register('glt', exist_ok=True)

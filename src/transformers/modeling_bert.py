@@ -29,6 +29,7 @@ from .configuration_bert import BertConfig
 from .file_utils import add_start_docstrings, add_start_docstrings_to_callable
 from .modeling_utils import PreTrainedModel, prune_linear_layer
 
+from .glt_ungrounded import GroundedCKYEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -1197,9 +1198,9 @@ class BertForGLTSequenceClassification(BertPreTrainedModel):
             non_compositional_reps=False,
             visual_module_dropout_prob=0,
             answer_comp_dropout_prob=0.0,
-            input_size=d_inp_model
+            input_size=512
         )
-        self.modeling_layer = glt_ungrounded.GroundedCKYEncoder(config)
+        self.modeling_layer = GroundedCKYEncoder(config)
 
 
         self.init_weights()

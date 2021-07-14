@@ -1,4 +1,7 @@
 from typing import Dict
+import sys
+
+sys.path.append('/home2/mrbarnes/gp1/bert_base/transformers/src')
 
 import torch
 from allennlp.data import Vocabulary
@@ -7,11 +10,11 @@ from allennlp.nn import util
 from allennlp.training.metrics import CategoricalAccuracy
 from torch import nn
 from torch.nn import CrossEntropyLoss
-from transformers import BertPreTrainedModel, BertConfig
+#from .modeling_bert import BertPreTrainedModel, BertConfig
 
-from src.nn import tie_layers
-from src.tree import sentence_to_tree
-from src.glt import GLTEmbeddings, GLTLayer, GLTAnswerVisualTextComp
+from .nn import tie_layers
+from .tree import sentence_to_tree
+from .glt import GLTEmbeddings, GLTLayer, GLTAnswerVisualTextComp
 
 
 @Model.register('glt_ungrounded', exist_ok=True)
