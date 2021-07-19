@@ -31,6 +31,7 @@ from .modeling_utils import PreTrainedModel, prune_linear_layer
 
 logger = logging.getLogger(__name__)
 
+
 BERT_PRETRAINED_MODEL_ARCHIVE_LIST = [
     "bert-base-uncased",
     "bert-large-uncased",

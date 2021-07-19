@@ -10,11 +10,67 @@ from .activations import gelu, gelu_new, swish
 from .configuration_bert import BertConfig
 from .file_utils import add_start_docstrings, add_start_docstrings_to_callable
 from .modeling_utils import PreTrainedModel, prune_linear_layer
-from .modeling_bert import BertPreTrainedModel
+from .modeling_bert import BertPreTrainedModel, BertModel, BertConfig
 
 from .glt_ungrounded import GroundedCKYEncoder
 
 logger = logging.getLogger(__name__)
+
+BERT_START_DOCSTRING = r"""
+    This model is a PyTorch `torch.nn.Module <https://pytorch.org/docs/stable/nn.html#torch.nn.Module>`_ sub-class.
+    Use it as a regular PyTorch Module and refer to the PyTorch documentation for all matter related to general
+    usage and behavior.
+
+    Parameters:
+        config (:class:`~transformers.BertConfig`): Model configuration class with all the parameters of the model.
+            Initializing with a config file does not load the weights associated with the model, only the configuration.
+            Check out the :meth:`~transformers.PreTrainedModel.from_pretrained` method to load the model weights.
+"""
+
+BERT_INPUTS_DOCSTRING = r"""
+    Args:
+        input_ids (:obj:`torch.LongTensor` of shape :obj:`{0}`):
+            Indices of input sequence tokens in the vocabulary.
+
+            Indices can be obtained using :class:`transformers.BertTokenizer`.
+            See :func:`transformers.PreTrainedTokenizer.encode` and
+            :func:`transformers.PreTrainedTokenizer.encode_plus` for details.
+
+            `What are input IDs? <../glossary.html#input-ids>`__
+        attention_mask (:obj:`torch.FloatTensor` of shape :obj:`{0}`, `optional`, defaults to :obj:`None`):
+            Mask to avoid performing attention on padding token indices.
+            Mask values selected in ``[0, 1]``:
+            ``1`` for tokens that are NOT MASKED, ``0`` for MASKED tokens.
+
+            `What are attention masks? <../glossary.html#attention-mask>`__
+        token_type_ids (:obj:`torch.LongTensor` of shape :obj:`{0}`, `optional`, defaults to :obj:`None`):
+            Segment token indices to indicate first and second portions of the inputs.
+            Indices are selected in ``[0, 1]``: ``0`` corresponds to a `sentence A` token, ``1``
+            corresponds to a `sentence B` token
+
+            `What are token type IDs? <../glossary.html#token-type-ids>`_
+        position_ids (:obj:`torch.LongTensor` of shape :obj:`{0}`, `optional`, defaults to :obj:`None`):
+            Indices of positions of each input sequence tokens in the position embeddings.
+            Selected in the range ``[0, config.max_position_embeddings - 1]``.
+
+            `What are position IDs? <../glossary.html#position-ids>`_
+        head_mask (:obj:`torch.FloatTensor` of shape :obj:`(num_heads,)` or :obj:`(num_layers, num_heads)`, `optional`, defaults to :obj:`None`):
+            Mask to nullify selected heads of the self-attention modules.
+            Mask values selected in ``[0, 1]``:
+            :obj:`1` indicates the head is **not masked**, :obj:`0` indicates the head is **masked**.
+        inputs_embeds (:obj:`torch.FloatTensor` of shape :obj:`(batch_size, sequence_length, hidden_size)`, `optional`, defaults to :obj:`None`):
+            Optionally, instead of passing :obj:`input_ids` you can choose to directly pass an embedded representation.
+            This is useful if you want more control over how to convert `input_ids` indices into associated vectors
+            than the model's internal embedding lookup matrix.
+        encoder_hidden_states  (:obj:`torch.FloatTensor` of shape :obj:`(batch_size, sequence_length, hidden_size)`, `optional`, defaults to :obj:`None`):
+            Sequence of hidden-states at the output of the last layer of the encoder. Used in the cross-attention
+            if the model is configured as a decoder.
+        encoder_attention_mask (:obj:`torch.FloatTensor` of shape :obj:`(batch_size, sequence_length)`, `optional`, defaults to :obj:`None`):
+            Mask to avoid performing attention on the padding token indices of the encoder input. This mask
+            is used in the cross-attention if the model is configured as a decoder.
+            Mask values selected in ``[0, 1]``:
+            ``1`` for tokens that are NOT MASKED, ``0`` for MASKED tokens.
+"""
 
 @add_start_docstrings(
     """Bert Model transformer with a GLT head on top e.g. for GLUE tasks. """,
@@ -58,7 +114,7 @@ class BertForGLTSequenceClassification(BertPreTrainedModel):
 
         self.init_weights()
 
-    def left_justify(a, axis=1, side='left'):    
+    def left_justify(self, a, axis=1, side='left'):    
         """
         Justifies a 3D array by sequence
 
@@ -74,7 +130,7 @@ class BertForGLTSequenceClassification(BertPreTrainedModel):
 
         """
         # Zeros is the pad 
-        invalid_val = torch.zeros(a.shape[2])
+        invalid_val = torch.zeros(a.shape[2]).cuda()
 
         # Find where not all equal to pad value (valid token is)
         mask = torch.all(torch.eq(a, invalid_val),  dim=2)
@@ -90,12 +146,12 @@ class BertForGLTSequenceClassification(BertPreTrainedModel):
         # print(a.shape)
 
         # Fill values
-        out = torch.zeros(a.shape)
+        out = torch.zeros(a.shape).cuda()
         out[justified_mask] = a[mask]
 
         return out
 
-    def separate_batches(sequence_output, attention_mask, token_type_ids):    
+    def separate_batches(self, sequence_output, attention_mask, token_type_ids):    
         """
         Separates sentence_1 and sentence_2 batches
 
@@ -108,7 +164,7 @@ class BertForGLTSequenceClassification(BertPreTrainedModel):
 
         """
         
-        token_type_ids_a = torch.logical_not(torch.Tensor(token_type_ids)).to(torch.int)
+        token_type_ids_a = torch.logical_not(token_type_ids).to(torch.int)
         token_type_ids_b = token_type_ids # (batch_size, sequence_length)
 
         reshaped_sequence = sequence_output.permute(2,0,1) # (hidden_size, batch_size, sequence_length)
@@ -116,12 +172,12 @@ class BertForGLTSequenceClassification(BertPreTrainedModel):
         batch_1 = reshaped_sequence * attention_mask * token_type_ids_a # (hidden_size, batch_size, sequence_length)
         batch_2 = reshaped_sequence * attention_mask * token_type_ids_b
 
-        batch_2 = left_justify(batch_2.permute(1,2,0))
+        batch_2 = self.left_justify(batch_2.permute(1,2,0))
 
         batch_1 = batch_1[:,:,:64].permute(1,2,0) # (batch_size, sequence_length, hidden_size/2)
-        batch_2 = batch_2[:,:,:64]
+        batch_2 = batch_2[:,:64,:]
 
-        invalid_val = torch.zeros(sequence_output.shape[2]) # Zeros is the pad 
+        invalid_val = torch.zeros(sequence_output.shape[2]).cuda() # Zeros is the pad 
         mask_1 = torch.logical_not(torch.all(torch.eq(batch_1, invalid_val),  dim=2)).to(torch.int) # (batch_size, sequence_length)
         mask_2 = torch.logical_not(torch.all(torch.eq(batch_2, invalid_val),  dim=2)).to(torch.int)
 
@@ -194,8 +250,8 @@ class BertForGLTSequenceClassification(BertPreTrainedModel):
 
         batch_1, batch_2, batch_1_mask, batch_2_mask = self.separate_batches(projected_output, attention_mask, token_type_ids) # (batch_size, sequence_length/2, hidden_size)
 
-        emb1 = self.dropout(self.modeling_layer(batch_1, batch_1_mask))
-        emb2 = self.dropout(self.modeling_layer(batch_2, batch_2_mask))
+        emb1 = self.dropout(self.modeling_layer(batch_1, batch_1_mask)[0])
+        emb2 = self.dropout(self.modeling_layer(batch_2, batch_2_mask)[0])
 
         pair_emb = torch.cat([emb1, emb2, torch.abs(emb1 - emb2), emb1 * emb2], 1)
         logits = self.classifier(pair_emb)

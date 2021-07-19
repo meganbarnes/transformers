@@ -402,7 +402,7 @@ class Trainer:
 
         if self.tb_writer is not None:
             self.tb_writer.add_text("args", self.args.to_json_string())
-            self.tb_writer.add_hparams(self.args.to_sanitized_dict(), metric_dict={})
+            #self.tb_writer.add_hparams(self.args.to_sanitized_dict(), metric_dict={})
 
         # Train!
         if is_tpu_available():
