@@ -550,9 +550,9 @@ class Trainer:
     def _log(self, logs: Dict[str, float], iterator: Optional[tqdm] = None) -> None:
         if self.epoch is not None:
             logs["epoch"] = self.epoch
-        if self.tb_writer:
-            for k, v in logs.items():
-                self.tb_writer.add_scalar(k, v, self.global_step)
+        #if self.tb_writer:
+            #for k, v in logs.items():
+                #self.tb_writer.add_scalar(k, v, self.global_step)
         if is_wandb_available():
             wandb.log(logs, step=self.global_step)
         output = json.dumps({**logs, **{"step": self.global_step}})
@@ -742,6 +742,7 @@ class Trainer:
         preds: torch.Tensor = None
         label_ids: torch.Tensor = None
         model.eval()
+        all_attns = []
 
         if is_tpu_available():
             dataloader = pl.ParallelLoader(dataloader, [self.args.device]).per_device_loader(self.args.device)
@@ -759,6 +760,8 @@ class Trainer:
                     eval_losses += [step_eval_loss.mean().item()]
                 else:
                     logits = outputs[0]
+                print("O SHAPE", outputs[-1][0].shape)
+                all_attns.append([x.cpu() for x in outputs[-1]])
 
             if not prediction_loss_only:
                 if preds is None:
@@ -802,7 +805,7 @@ class Trainer:
             if not key.startswith("eval_"):
                 metrics[f"eval_{key}"] = metrics.pop(key)
 
-        return PredictionOutput(predictions=preds, label_ids=label_ids, metrics=metrics)
+        return PredictionOutput(predictions=preds, label_ids=label_ids, metrics=metrics), all_attns
 
     def distributed_concat(self, tensor: torch.Tensor, num_total_examples: int) -> torch.Tensor:
         assert self.args.local_rank != -1

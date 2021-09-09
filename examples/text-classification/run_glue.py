@@ -23,6 +23,7 @@ import sys
 from dataclasses import dataclass, field
 from typing import Dict, Optional
 
+import pickle
 import numpy as np
 sys.path.append('/home2/mrbarnes/gp1/bert_base/transformers/src')
 
@@ -200,9 +201,14 @@ def main():
             test_datasets.append(GlueDataset(mnli_mm_data_args, tokenizer=tokenizer, mode="test"))
 
         for test_dataset in test_datasets:
-            predictions = trainer.predict(test_dataset=test_dataset).predictions
+            predictions, attentions = trainer.predict(test_dataset=test_dataset)
+            predictions = predictions.predictions
+	    
             if output_mode == "classification":
                 predictions = np.argmax(predictions, axis=1)
+
+            with open(os.path.join(training_args.output_dir, f"attentions_{test_dataset.args.task_name}.pkl"),'wb') as attn_file:
+                pickle.dump(attentions, attn_file)
 
             output_test_file = os.path.join(
                 training_args.output_dir, f"test_results_{test_dataset.args.task_name}.txt"
